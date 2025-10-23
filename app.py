@@ -144,15 +144,22 @@ def run_app():
         else:
             # Second click: attempt to move from selected to clicked_square
             move_uci = selected + clicked_square
-            move = chess.Move.from_uci(move_uci)
+            move = None
+            # Try to parse the move; handle invalid UCI strings gracefully
+            try:
+                move = chess.Move.from_uci(move_uci)
+            except Exception:
+                move = None
+
             # Handle pawn promotion by defaulting to queen if necessary
-            if move not in board.legal_moves:
-                # Try queen promotion
+            if move is not None and move not in board.legal_moves:
                 try:
                     move = chess.Move.from_uci(move_uci + 'q')
                 except Exception:
-                    pass
-            if move in board.legal_moves:
+                    move = None
+
+            # If the move is valid and legal, execute it
+            if move is not None and move in board.legal_moves:
                 # Execute player's move
                 board_before = board.copy()
                 board.push(move)
@@ -167,6 +174,7 @@ def run_app():
                         board.push(ai_move)
                         status_placeholder.info(f"电脑走：{ai_move.uci()} — 讲解：{explain_move(ai_move, ai_before)}")
             else:
+                # Invalid move or illegal move
                 status_placeholder.error("非法走法，请重试。")
                 st.session_state.selected_square = None
 
